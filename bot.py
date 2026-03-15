@@ -14,6 +14,8 @@ waiting_for_payment = {}
 users = set()
 used_utr = set()
 
+waiting_qr = False
+
 start_text = """
 Video Channel 🌸
 
@@ -38,7 +40,6 @@ Make the payment of ₹99.00
 After payment send your 12 digit UTR number.
 """
 
-
 # START
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -47,21 +48,16 @@ def start(message):
     users.add(user_id)
 
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("💎 Get Premium", callback_data="buy"))
-    markup.add(InlineKeyboardButton("🎬 Premium Demo", url=demo_channel))
-    markup.add(InlineKeyboardButton("📖 How To Get Premium", url=how_channel))
+    markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
+    markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
+    markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
 
     photo = open("start.jpg","rb")
 
-    bot.send_photo(
-        message.chat.id,
-        photo,
-        caption=start_text,
-        reply_markup=markup
-    )
+    bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
 
 
-# ADMIN USERS COUNT
+# USERS COMMAND
 @bot.message_handler(commands=['users'])
 def users_count(message):
 
@@ -71,7 +67,7 @@ def users_count(message):
     bot.reply_to(message,f"👥 Total Users: {len(users)}")
 
 
-# ADMIN BROADCAST
+# BROADCAST
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
 
@@ -87,6 +83,85 @@ def broadcast(message):
             pass
 
     bot.reply_to(message,"✅ Broadcast Sent")
+
+
+# SET DEMO CHANNEL
+@bot.message_handler(commands=['setdemo'])
+def set_demo(message):
+
+    global demo_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        demo_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ Demo channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/setdemo https://t.me/channel")
+
+
+# SET HOW CHANNEL
+@bot.message_handler(commands=['sethow'])
+def set_how(message):
+
+    global how_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        how_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ How channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/sethow https://t.me/channel")
+
+
+# SET PREMIUM CHANNEL
+@bot.message_handler(commands=['setpremium'])
+def set_premium(message):
+
+    global premium_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        premium_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ Premium channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/setpremium https://t.me/channel")
+
+
+# SET QR
+@bot.message_handler(commands=['setqr'])
+def set_qr(message):
+
+    global waiting_qr
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    waiting_qr = True
+    bot.reply_to(message,"📷 Send new QR image")
+
+
+@bot.message_handler(content_types=['photo'])
+def update_qr(message):
+
+    global waiting_qr
+
+    if waiting_qr and message.from_user.id == ADMIN_ID:
+
+        file_info = bot.get_file(message.photo[-1].file_id)
+        downloaded = bot.download_file(file_info.file_path)
+
+        with open("qr.jpg","wb") as new_file:
+            new_file.write(downloaded)
+
+        waiting_qr = False
+
+        bot.reply_to(message,"✅ QR updated successfully")
 
 
 # BUTTON HANDLER
