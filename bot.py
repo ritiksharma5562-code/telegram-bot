@@ -28,13 +28,16 @@ try:
 except:
     used_utr = set()
 
+
 def save_users():
     with open(USERS_FILE,"w") as f:
         json.dump(list(users),f)
 
+
 def save_utr():
     with open(UTR_FILE,"w") as f:
         json.dump(list(used_utr),f)
+
 
 start_text = """
 Video Channel 🌸
@@ -60,6 +63,8 @@ Make the payment of ₹99.00
 After payment send your UTR number.
 """
 
+
+# START COMMAND
 @bot.message_handler(commands=['start'])
 def start(message):
 
@@ -81,6 +86,34 @@ def start(message):
     )
 
 
+# ADMIN COMMANDS
+@bot.message_handler(commands=['users'])
+def users_count(message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    bot.reply_to(message,f"👥 Total Users: {len(users)}")
+
+
+@bot.message_handler(commands=['broadcast'])
+def broadcast(message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    text = message.text.replace("/broadcast ","")
+
+    for user in users:
+        try:
+            bot.send_message(user,text)
+        except:
+            pass
+
+    bot.reply_to(message,"✅ Broadcast Sent")
+
+
+# BUTTON HANDLER
 @bot.callback_query_handler(func=lambda call: True)
 def buttons(call):
 
@@ -91,7 +124,7 @@ def buttons(call):
         waiting_for_payment[user_id] = True
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("⬅ Back", callback_data="back"))
+        markup.add(InlineKeyboardButton("⬅ Back",callback_data="back"))
 
         media = InputMediaPhoto(
             open("qr.jpg","rb"),
@@ -105,14 +138,16 @@ def buttons(call):
             reply_markup=markup
         )
 
+        bot.answer_callback_query(call.id)
+
     elif call.data == "back":
 
         waiting_for_payment[user_id] = False
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("💎 Get Premium", callback_data="buy"))
-        markup.add(InlineKeyboardButton("🎬 Premium Demo", url=demo_channel))
-        markup.add(InlineKeyboardButton("📖 How To Get Premium", url=how_channel))
+        markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
+        markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
+        markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
 
         media = InputMediaPhoto(
             open("start.jpg","rb"),
@@ -126,37 +161,42 @@ def buttons(call):
             reply_markup=markup
         )
 
+        bot.answer_callback_query(call.id)
+
     elif call.data.startswith("approve_"):
 
         uid = int(call.data.split("_")[1])
 
         bot.send_message(
             uid,
-            "✅ Payment verified!\n\nJoin your private channel:\n" + premium_channel
+            "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
         )
 
-        bot.answer_callback_query(call.id,"Approved ✅")
+        bot.answer_callback_query(call.id,"✅ Approved")
 
     elif call.data.startswith("reject_"):
 
         uid = int(call.data.split("_")[1])
 
-        bot.send_message(uid,"❌ Payment rejected")
+        bot.send_message(uid,"❌ Payment Rejected")
 
-        bot.answer_callback_query(call.id,"Rejected ❌")
+        bot.answer_callback_query(call.id,"❌ Rejected")
 
 
+# UTR HANDLER
 @bot.message_handler(func=lambda m: True)
 def check_payment(message):
 
     uid = message.from_user.id
+
+    if message.text.startswith("/"):
+        return
 
     if uid in waiting_for_payment and waiting_for_payment[uid]:
 
         utr = message.text.strip()
 
         if utr in used_utr:
-
             bot.reply_to(message,"⚠️ This UTR already used")
             return
 
@@ -165,8 +205,8 @@ def check_payment(message):
 
         markup = InlineKeyboardMarkup()
         markup.add(
-            InlineKeyboardButton("✅ Approve", callback_data="approve_"+str(uid)),
-            InlineKeyboardButton("❌ Reject", callback_data="reject_"+str(uid))
+            InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
+            InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
         )
 
         bot.send_message(
@@ -175,17 +215,11 @@ def check_payment(message):
             reply_markup=markup
         )
 
-        bot.reply_to(
-            message,
-            "⏳ Payment sent for verification"
-        )
+        bot.reply_to(message,"⏳ Payment Sent For Verification")
 
     else:
 
-        bot.reply_to(
-            message,
-            "⚠️ This is not correct selection"
-        )
+        bot.reply_to(message,"⚠️ This is not correct selection")
 
 
 print("Bot Running...")
