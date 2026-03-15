@@ -1,7 +1,7 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
-TOKEN = "TOKEN = "8687497631:AAHvd0LgeEiuw2knoRd5nGf31yG1ZQr7dA4""
+TOKEN = "8687497631:AAHvd0LgeEiuw2knoRd5nGf31yG1ZQr7dA4"
 ADMIN_ID = 5888788582
 
 bot = telebot.TeleBot(TOKEN)
@@ -35,7 +35,7 @@ Validity :- lifetime
 payment_text = """
 Make the payment of ₹99.00
 
-After payment send your UTR number.
+After payment send your 12 digit UTR number.
 """
 
 
@@ -47,16 +47,21 @@ def start(message):
     users.add(user_id)
 
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
-    markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
-    markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
+    markup.add(InlineKeyboardButton("💎 Get Premium", callback_data="buy"))
+    markup.add(InlineKeyboardButton("🎬 Premium Demo", url=demo_channel))
+    markup.add(InlineKeyboardButton("📖 How To Get Premium", url=how_channel))
 
     photo = open("start.jpg","rb")
 
-    bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
+    bot.send_photo(
+        message.chat.id,
+        photo,
+        caption=start_text,
+        reply_markup=markup
+    )
 
 
-# USERS COMMAND
+# ADMIN USERS COUNT
 @bot.message_handler(commands=['users'])
 def users_count(message):
 
@@ -66,7 +71,7 @@ def users_count(message):
     bot.reply_to(message,f"👥 Total Users: {len(users)}")
 
 
-# BROADCAST
+# ADMIN BROADCAST
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
 
@@ -151,7 +156,7 @@ def buttons(call):
             call.message.message_id
         )
 
-        bot.answer_callback_query(call.id,"✅ Approved")
+        bot.answer_callback_query(call.id,"✅ Approved Successfully")
 
 
     elif call.data.startswith("reject_"):
@@ -166,7 +171,7 @@ def buttons(call):
             call.message.message_id
         )
 
-        bot.answer_callback_query(call.id,"❌ Rejected")
+        bot.answer_callback_query(call.id,"❌ Rejected Successfully")
 
 
 # UTR CHECK
@@ -189,7 +194,7 @@ def payment_check(message):
 
         if text in used_utr:
 
-            bot.reply_to(message,"⚠️ UTR already used")
+            bot.reply_to(message,"⚠️ This UTR already used")
             return
 
         used_utr.add(text)
@@ -214,4 +219,4 @@ def payment_check(message):
 
 
 print("Bot Running...")
-bot.infinity_polling()
+bot.infinity_polling(skip_pending=True)
