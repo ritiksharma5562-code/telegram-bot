@@ -8,7 +8,7 @@ bot = telebot.TeleBot(TOKEN)
 
 premium_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
-how_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
+how_channel = ""
 
 waiting_for_payment = {}
 users = set()
