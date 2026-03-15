@@ -186,7 +186,6 @@ def payment_check(message):
 
     if uid in waiting_for_payment and waiting_for_payment[uid]:
 
-        # UTR validation
         if not text.isdigit() or len(text) != 12:
 
             bot.reply_to(message,"❌ Invalid UTR\n\nPlease send correct 12 digit UTR number.")
