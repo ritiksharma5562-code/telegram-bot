@@ -1,8 +1,7 @@
 import telebot
-import json
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
-TOKEN = "8687497631:AAHvd0LgeEiuw2knoRd5nGf31yG1ZQr7dA4"
+TOKEN = "YOUR_BOT_TOKEN"
 ADMIN_ID = 5888788582
 
 bot = telebot.TeleBot(TOKEN)
@@ -12,32 +11,8 @@ demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 how_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 
 waiting_for_payment = {}
-
-USERS_FILE = "users.json"
-UTR_FILE = "utr.json"
-
-try:
-    with open(USERS_FILE) as f:
-        users = set(json.load(f))
-except:
-    users = set()
-
-try:
-    with open(UTR_FILE) as f:
-        used_utr = set(json.load(f))
-except:
-    used_utr = set()
-
-
-def save_users():
-    with open(USERS_FILE,"w") as f:
-        json.dump(list(users),f)
-
-
-def save_utr():
-    with open(UTR_FILE,"w") as f:
-        json.dump(list(used_utr),f)
-
+users = set()
+used_utr = set()
 
 start_text = """
 Video Channel 🌸
@@ -68,25 +43,20 @@ After payment send your UTR number.
 @bot.message_handler(commands=['start'])
 def start(message):
 
-    users.add(message.chat.id)
-    save_users()
+    user_id = message.from_user.id
+    users.add(user_id)
 
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("💎 Get Premium", callback_data="buy"))
-    markup.add(InlineKeyboardButton("🎬 Premium Demo", url=demo_channel))
-    markup.add(InlineKeyboardButton("📖 How To Get Premium", url=how_channel))
+    markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
+    markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
+    markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
 
     photo = open("start.jpg","rb")
 
-    bot.send_photo(
-        message.chat.id,
-        photo,
-        caption=start_text,
-        reply_markup=markup
-    )
+    bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
 
 
-# ADMIN COMMANDS
+# USERS COMMAND
 @bot.message_handler(commands=['users'])
 def users_count(message):
 
@@ -96,6 +66,7 @@ def users_count(message):
     bot.reply_to(message,f"👥 Total Users: {len(users)}")
 
 
+# BROADCAST
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
 
@@ -140,6 +111,7 @@ def buttons(call):
 
         bot.answer_callback_query(call.id)
 
+
     elif call.data == "back":
 
         waiting_for_payment[user_id] = False
@@ -179,7 +151,7 @@ def buttons(call):
             call.message.message_id
         )
 
-        bot.answer_callback_query(call.id,"✅ Approved Successfully")
+        bot.answer_callback_query(call.id,"✅ Approved")
 
 
     elif call.data.startswith("reject_"):
@@ -194,28 +166,33 @@ def buttons(call):
             call.message.message_id
         )
 
-        bot.answer_callback_query(call.id,"❌ Rejected Successfully")
+        bot.answer_callback_query(call.id,"❌ Rejected")
 
 
-# UTR HANDLER
-@bot.message_handler(func=lambda m: True)
-def check_payment(message):
+# UTR CHECK
+@bot.message_handler(func=lambda message: True)
+def payment_check(message):
 
     uid = message.from_user.id
+    text = message.text.strip()
 
-    if message.text.startswith("/"):
+    if text.startswith("/"):
         return
 
     if uid in waiting_for_payment and waiting_for_payment[uid]:
 
-        utr = message.text.strip()
+        # UTR validation
+        if not text.isdigit() or len(text) != 12:
 
-        if utr in used_utr:
-            bot.reply_to(message,"⚠️ This UTR already used")
+            bot.reply_to(message,"❌ Invalid UTR\n\nPlease send correct 12 digit UTR number.")
             return
 
-        used_utr.add(utr)
-        save_utr()
+        if text in used_utr:
+
+            bot.reply_to(message,"⚠️ UTR already used")
+            return
+
+        used_utr.add(text)
 
         markup = InlineKeyboardMarkup()
         markup.add(
@@ -225,11 +202,11 @@ def check_payment(message):
 
         bot.send_message(
             ADMIN_ID,
-            f"Payment request\n\nUser: {uid}\nUTR: {utr}",
+            f"Payment request\n\nUser: {uid}\nUTR: {text}",
             reply_markup=markup
         )
 
-        bot.reply_to(message,"⏳ Payment Sent For Verification")
+        bot.reply_to(message,"⏳ Payment sent for verification")
 
     else:
 
