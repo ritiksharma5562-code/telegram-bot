@@ -11,7 +11,17 @@ demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 how_channel = " "
 
 waiting_for_payment = {}
-users = set()
+# LOAD USERS FROM FILE
+try:
+    with open("users.txt","r") as f:
+        users = set(f.read().splitlines())
+except:
+    users = set()
+
+def save_user(user_id):
+    users.add(str(user_id))
+    with open("users.txt","a") as f:
+        f.write(str(user_id) + "\n")
 used_utr = set()
 
 waiting_qr = False
@@ -45,7 +55,7 @@ After payment send your 12 digit UTR number.
 def start(message):
 
     user_id = message.from_user.id
-    users.add(user_id)
+    save_user(user_id)
 
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
@@ -76,9 +86,9 @@ def broadcast(message):
 
     text = message.text.replace("/broadcast ","")
 
-    for user in users:
+    for user in list(users):
         try:
-            bot.send_message(user,text)
+            bot.send_message(int(user), text)
         except:
             pass
 
