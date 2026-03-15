@@ -64,7 +64,7 @@ After payment send your UTR number.
 """
 
 
-# START COMMAND
+# START
 @bot.message_handler(commands=['start'])
 def start(message):
 
@@ -163,6 +163,7 @@ def buttons(call):
 
         bot.answer_callback_query(call.id)
 
+
     elif call.data.startswith("approve_"):
 
         uid = int(call.data.split("_")[1])
@@ -172,7 +173,14 @@ def buttons(call):
             "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
         )
 
-        bot.answer_callback_query(call.id,"✅ Approved")
+        bot.edit_message_text(
+            f"✅ Payment Approved\n\nUser: {uid}",
+            call.message.chat.id,
+            call.message.message_id
+        )
+
+        bot.answer_callback_query(call.id,"✅ Approved Successfully")
+
 
     elif call.data.startswith("reject_"):
 
@@ -180,7 +188,13 @@ def buttons(call):
 
         bot.send_message(uid,"❌ Payment Rejected")
 
-        bot.answer_callback_query(call.id,"❌ Rejected")
+        bot.edit_message_text(
+            f"❌ Payment Rejected\n\nUser: {uid}",
+            call.message.chat.id,
+            call.message.message_id
+        )
+
+        bot.answer_callback_query(call.id,"❌ Rejected Successfully")
 
 
 # UTR HANDLER
