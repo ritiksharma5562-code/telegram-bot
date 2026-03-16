@@ -1,4 +1,3 @@
 pyTelegramBotAPI
 pytesseract
-opencv-python
 Pillow
