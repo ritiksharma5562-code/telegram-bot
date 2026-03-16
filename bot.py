@@ -11,9 +11,9 @@ ADMIN_ID = 5888788582
 
 bot = telebot.TeleBot(TOKEN)
 
-premium_channel = "https://t.me/channel"
-demo_channel = "https://t.me/channel"
-how_channel = "https://t.me/channel"
+premium_channel = "https://t.me/+aX_BhutfN11kNWQ1"
+demo_channel = "https://t.me/+UATy4AN0lbo2NDg1"
+how_channel = "https://t.me/AKASH_OP_001?text=hello+Sir+how+to+get+premium"
 
 waiting_screenshot = {}
 waiting_qr = False
