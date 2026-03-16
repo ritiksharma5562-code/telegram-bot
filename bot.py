@@ -1,4 +1,5 @@
 import telebot
+import hashlib
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
 TOKEN = "8687497631:AAE4niCmKtkhPsAy44zn04-bZOjJYg94Kd4"
@@ -12,8 +13,9 @@ how_channel = " "
 
 waiting_for_payment = {}
 waiting_qr = False
+used_images = set()
 
-# USERS LOAD
+# LOAD USERS
 try:
     with open("users.txt","r") as f:
         users = set(f.read().splitlines())
@@ -21,9 +23,11 @@ except:
     users = set()
 
 def save_user(user_id):
+
     user_id = str(user_id)
 
     if user_id not in users:
+
         users.add(user_id)
 
         with open("users.txt","a") as f:
@@ -54,6 +58,7 @@ payment_text = """
 2️⃣ Click on 'I HAVE PAID' button below 👇
 """
 
+
 # START
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -62,13 +67,27 @@ def start(message):
     save_user(user_id)
 
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
-    markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
-    markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
+
+    markup.add(
+        InlineKeyboardButton("💎 Get Premium",callback_data="buy")
+    )
+
+    markup.add(
+        InlineKeyboardButton("🎬 Premium Demo",url=demo_channel)
+    )
+
+    markup.add(
+        InlineKeyboardButton("📖 How To Get Premium",url=how_channel)
+    )
 
     photo = open("start.jpg","rb")
 
-    bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
+    bot.send_photo(
+        message.chat.id,
+        photo,
+        caption=start_text,
+        reply_markup=markup
+    )
 
 
 # USERS
@@ -100,7 +119,7 @@ def broadcast(message):
     bot.reply_to(message,"✅ Broadcast Sent")
 
 
-# CHANNEL CHANGE COMMANDS
+# CHANGE CHANNEL COMMANDS
 @bot.message_handler(commands=['setdemo'])
 def set_demo(message):
 
@@ -154,39 +173,23 @@ def set_qr(message):
     bot.reply_to(message,"📷 Send new QR image")
 
 
-@bot.message_handler(content_types=['photo'])
-def update_qr(message):
-
-    global waiting_qr
-
-    if waiting_qr and message.from_user.id == ADMIN_ID:
-
-        file_info = bot.get_file(message.photo[-1].file_id)
-
-        downloaded = bot.download_file(file_info.file_path)
-
-        with open("qr.jpg","wb") as new_file:
-            new_file.write(downloaded)
-
-        waiting_qr = False
-
-        bot.reply_to(message,"✅ QR updated successfully")
-
-        return
-
-
 # BUTTON HANDLER
 @bot.callback_query_handler(func=lambda call: True)
 def buttons(call):
 
     user_id = call.from_user.id
 
-
     if call.data == "buy":
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✅ I HAVE PAID",callback_data="paid"))
-        markup.add(InlineKeyboardButton("❌ Cancel",callback_data="back"))
+
+        markup.add(
+            InlineKeyboardButton("✅ I HAVE PAID",callback_data="paid")
+        )
+
+        markup.add(
+            InlineKeyboardButton("❌ Cancel",callback_data="back")
+        )
 
         media = InputMediaPhoto(
             open("qr.jpg","rb"),
@@ -218,9 +221,18 @@ def buttons(call):
     elif call.data == "back":
 
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
-        markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
-        markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
+
+        markup.add(
+            InlineKeyboardButton("💎 Get Premium",callback_data="buy")
+        )
+
+        markup.add(
+            InlineKeyboardButton("🎬 Premium Demo",url=demo_channel)
+        )
+
+        markup.add(
+            InlineKeyboardButton("📖 How To Get Premium",url=how_channel)
+        )
 
         media = InputMediaPhoto(
             open("start.jpg","rb"),
@@ -258,13 +270,45 @@ def buttons(call):
         bot.answer_callback_query(call.id,"❌ Rejected")
 
 
-# SCREENSHOT RECEIVE
-@bot.message_handler(content_types=['photo'], func=lambda m: m.from_user.id in waiting_for_payment)
-def payment_screenshot(message):
+# PHOTO HANDLER
+@bot.message_handler(content_types=['photo'])
+def handle_photo(message):
 
+    global waiting_qr
+
+    # QR UPDATE
+    if waiting_qr and message.from_user.id == ADMIN_ID:
+
+        file_info = bot.get_file(message.photo[-1].file_id)
+
+        downloaded = bot.download_file(file_info.file_path)
+
+        with open("qr.jpg","wb") as new_file:
+            new_file.write(downloaded)
+
+        waiting_qr = False
+
+        bot.reply_to(message,"✅ QR updated successfully")
+
+        return
+
+
+    # PAYMENT SCREENSHOT
     uid = message.from_user.id
 
     if uid in waiting_for_payment and waiting_for_payment[uid]:
+
+        file_info = bot.get_file(message.photo[-1].file_id)
+        downloaded = bot.download_file(file_info.file_path)
+
+        image_hash = hashlib.md5(downloaded).hexdigest()
+
+        fake_flag = ""
+
+        if image_hash in used_images:
+            fake_flag = "⚠️ POSSIBLE FAKE / DUPLICATE SCREENSHOT"
+
+        used_images.add(image_hash)
 
         markup = InlineKeyboardMarkup()
 
@@ -276,7 +320,13 @@ def payment_screenshot(message):
         bot.send_photo(
             ADMIN_ID,
             message.photo[-1].file_id,
-            caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
+            caption=f"""Payment Screenshot
+
+User: @{message.from_user.username}
+ID: {uid}
+
+{fake_flag}
+""",
             reply_markup=markup
         )
 
