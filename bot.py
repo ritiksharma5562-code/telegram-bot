@@ -9,12 +9,13 @@ bot = telebot.TeleBot(TOKEN)
 
 premium_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
+how_channel = " "
 
 waiting_for_payment = {}
 waiting_qr = False
 used_images = set()
 
-# LOAD USERS
+# USERS DATABASE
 try:
     with open("users.txt","r") as f:
         users = set(f.read().splitlines())
@@ -22,7 +23,6 @@ except:
     users = set()
 
 def save_user(user_id):
-
     user_id = str(user_id)
 
     if user_id not in users:
@@ -118,7 +118,7 @@ def broadcast(message):
     bot.reply_to(message,"✅ Broadcast Sent")
 
 
-# CHANGE CHANNEL COMMANDS
+# SET CHANNEL COMMANDS
 @bot.message_handler(commands=['setdemo'])
 def set_demo(message):
 
@@ -168,7 +168,6 @@ def set_qr(message):
         return
 
     waiting_qr = True
-
     bot.reply_to(message,"📷 Send new QR image")
 
 
@@ -252,6 +251,8 @@ def buttons(call):
 
         uid = int(call.data.split("_")[1])
 
+        waiting_for_payment[uid] = False
+
         bot.send_message(
             uid,
             "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
@@ -263,6 +264,8 @@ def buttons(call):
     elif call.data.startswith("reject_"):
 
         uid = int(call.data.split("_")[1])
+
+        waiting_for_payment[uid] = False
 
         bot.send_message(uid,"❌ Payment Rejected")
 
@@ -301,11 +304,25 @@ def handle_photo(message):
         downloaded = bot.download_file(file_info.file_path)
 
         image_hash = hashlib.md5(downloaded).hexdigest()
+        image_size = len(downloaded)
 
-        fake_flag = ""
+        if image_size < 15000:
+
+            bot.reply_to(
+                message,
+                "❌ Invalid payment screenshot\n\nSend correct payment screenshot."
+            )
+
+            return
 
         if image_hash in used_images:
-            fake_flag = "⚠️ POSSIBLE FAKE / DUPLICATE SCREENSHOT"
+
+            bot.reply_to(
+                message,
+                "❌ Duplicate screenshot detected\nSend real payment screenshot."
+            )
+
+            return
 
         used_images.add(image_hash)
 
@@ -319,13 +336,7 @@ def handle_photo(message):
         bot.send_photo(
             ADMIN_ID,
             message.photo[-1].file_id,
-            caption=f"""Payment Screenshot
-
-User: @{message.from_user.username}
-ID: {uid}
-
-{fake_flag}
-""",
+            caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
             reply_markup=markup
         )
 
@@ -333,7 +344,10 @@ ID: {uid}
 
     else:
 
-        bot.reply_to(message,"⚠️ This is not correct selection")
+        bot.reply_to(
+            message,
+            "⚠️ Please click 'I HAVE PAID' before sending screenshot."
+        )
 
 
 print("Bot Running...")
