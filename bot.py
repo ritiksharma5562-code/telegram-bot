@@ -259,7 +259,7 @@ def buttons(call):
 
 
 # SCREENSHOT RECEIVE
-@bot.message_handler(content_types=['photo'])
+@bot.message_handler(content_types=['photo'], func=lambda m: m.from_user.id in waiting_for_payment)
 def payment_screenshot(message):
 
     uid = message.from_user.id
