@@ -1,19 +1,17 @@
 import telebot
 import json
 import pytesseract
-import cv2
-import numpy as np
 from PIL import Image
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = "8687497631:AAE4niCmKtkhPsAy44zn04-bZOjJYg94Kd4"
 ADMIN_ID = 5888788582
 
 bot = telebot.TeleBot(TOKEN)
 
-premium_channel = "https://t.me/+aX_BhutfN11kNWQ1"
-demo_channel = "https://t.me/+UATy4AN0lbo2NDg1"
-how_channel = "https://t.me/AKASH_OP_001?text=hello+Sir+how+to+get+premium"
+premium_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
+demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
+how_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 
 waiting_screenshot = {}
 waiting_qr = False
@@ -41,24 +39,46 @@ def save_user(uid):
         db["users"] = list(users)
         save_db(db)
 
-# PAYMENT KEYWORDS
-payment_keywords = [
-"upi","transaction","paid","success","paytm","phonepe",
-"google","gpay","debited","credited","₹"
-]
-
+# AI OCR PAYMENT DETECTION
 def detect_payment(image_path):
 
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = Image.open(image_path)
+    text = pytesseract.image_to_string(img).lower()
 
-    text = pytesseract.image_to_string(gray).lower()
+    keywords = [
+        "upi","transaction","paid","success",
+        "paytm","phonepe","google","gpay","₹"
+    ]
 
-    for word in payment_keywords:
+    for word in keywords:
         if word in text:
             return True
 
     return False
+
+
+start_text = """
+Video Channel 🌸
+
+For Desi Content Lovers 😋
+
+No Sn#p, Pure Desi Content 😙
+
+rare Desi le#ks ever.... 🎀
+
+Just pay and get entry...
+
+No - Ads Sh#t 🔥
+
+Price :- ₹99.00/-
+
+Validity :- lifetime
+"""
+
+payment_text = """
+1️⃣ Scan QR & Pay ₹99
+2️⃣ Click on 'I HAVE PAID' button below 👇
+"""
 
 # START
 @bot.message_handler(commands=['start'])
@@ -74,62 +94,102 @@ def start(message):
     bot.send_photo(
         message.chat.id,
         open("start.jpg","rb"),
-        caption="Premium Access",
+        caption=start_text,
         reply_markup=markup
     )
 
-# BUTTONS
-@bot.callback_query_handler(func=lambda call: True)
-def buttons(call):
+# USERS
+@bot.message_handler(commands=['users'])
+def users_count(message):
 
-    uid = call.from_user.id
+    if message.from_user.id != ADMIN_ID:
+        return
 
-    if call.data == "buy":
+    bot.reply_to(message,f"👥 Total Users: {len(users)}")
 
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("I HAVE PAID",callback_data="paid"))
-        markup.add(InlineKeyboardButton("Cancel",callback_data="back"))
+# BROADCAST
+@bot.message_handler(commands=['broadcast'])
+def broadcast(message):
 
-        media = InputMediaPhoto(
-            open("qr.jpg","rb"),
-            caption="Scan QR and pay ₹99"
-        )
+    if message.from_user.id != ADMIN_ID:
+        return
 
-        bot.edit_message_media(
-            media,
-            call.message.chat.id,
-            call.message.message_id,
-            reply_markup=markup
-        )
+    text = message.text.replace("/broadcast ","")
 
-    elif call.data == "paid":
+    for user in users:
+        try:
+            bot.send_message(user,text)
+        except:
+            pass
 
-        waiting_screenshot[uid] = True
+    bot.reply_to(message,"✅ Broadcast Sent")
 
-        bot.send_message(uid,"Send payment screenshot")
+# SET DEMO CHANNEL
+@bot.message_handler(commands=['setdemo'])
+def set_demo(message):
 
-    elif call.data.startswith("approve_"):
+    global demo_channel
 
-        uid = int(call.data.split("_")[1])
+    if message.from_user.id != ADMIN_ID:
+        return
 
-        bot.send_message(
-            uid,
-            "Payment Approved\nJoin:\n"+premium_channel
-        )
+    demo_channel = message.text.split(" ")[1]
+    bot.reply_to(message,"✅ Demo channel updated")
 
-        bot.answer_callback_query(call.id,"Approved",show_alert=True)
+# SET HOW CHANNEL
+@bot.message_handler(commands=['sethow'])
+def set_how(message):
 
-    elif call.data.startswith("reject_"):
+    global how_channel
 
-        uid = int(call.data.split("_")[1])
+    if message.from_user.id != ADMIN_ID:
+        return
 
-        bot.send_message(uid,"Payment Rejected")
+    how_channel = message.text.split(" ")[1]
+    bot.reply_to(message,"✅ How channel updated")
 
-        bot.answer_callback_query(call.id,"Rejected",show_alert=True)
+# SET PREMIUM CHANNEL
+@bot.message_handler(commands=['setpremium'])
+def set_premium(message):
 
-# SCREENSHOT
+    global premium_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    premium_channel = message.text.split(" ")[1]
+    bot.reply_to(message,"✅ Premium channel updated")
+
+# SET QR
+@bot.message_handler(commands=['setqr'])
+def set_qr(message):
+
+    global waiting_qr
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    waiting_qr = True
+    bot.reply_to(message,"📷 Send new QR image")
+
+# PHOTO HANDLER
 @bot.message_handler(content_types=['photo'])
-def screenshot(message):
+def handle_photo(message):
+
+    global waiting_qr
+
+    # QR UPDATE
+    if waiting_qr and message.from_user.id == ADMIN_ID:
+
+        file_info = bot.get_file(message.photo[-1].file_id)
+        downloaded = bot.download_file(file_info.file_path)
+
+        with open("qr.jpg","wb") as f:
+            f.write(downloaded)
+
+        waiting_qr = False
+        bot.reply_to(message,"✅ QR updated successfully")
+        return
 
     uid = message.from_user.id
 
@@ -150,29 +210,77 @@ def screenshot(message):
     # AI CHECK
     if not detect_payment("payment.jpg"):
 
-        bot.reply_to(
-            message,
-            "❌ Invalid payment screenshot\nSend correct payment proof"
-        )
-
+        bot.reply_to(message,"❌ Invalid payment screenshot")
         return
 
     waiting_screenshot.pop(uid)
 
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton("Approve",callback_data="approve_"+str(uid)),
-        InlineKeyboardButton("Reject",callback_data="reject_"+str(uid))
+        InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
+        InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
     )
 
     bot.send_photo(
         ADMIN_ID,
         message.photo[-1].file_id,
-        caption=f"Payment Screenshot\nUser: {uid}",
+        caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
         reply_markup=markup
     )
 
-    bot.reply_to(message,"Screenshot sent to admin")
+    bot.reply_to(message,"⏳ Screenshot sent for verification")
+
+# BUTTONS
+@bot.callback_query_handler(func=lambda call: True)
+def buttons(call):
+
+    uid = call.from_user.id
+
+    if call.data == "buy":
+
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("✅ I HAVE PAID",callback_data="paid"))
+        markup.add(InlineKeyboardButton("❌ Cancel",callback_data="back"))
+
+        media = InputMediaPhoto(
+            open("qr.jpg","rb"),
+            caption=payment_text
+        )
+
+        bot.edit_message_media(
+            media,
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=markup
+        )
+
+    elif call.data == "paid":
+
+        waiting_screenshot[uid] = True
+        bot.send_message(uid,"📸 Please send your payment screenshot now.")
+
+    elif call.data == "back":
+
+        start(call.message)
+
+    elif call.data.startswith("approve_"):
+
+        uid = int(call.data.split("_")[1])
+
+        bot.send_message(
+            uid,
+            "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
+        )
+
+        bot.answer_callback_query(call.id,"✅ Approved",show_alert=True)
+
+    elif call.data.startswith("reject_"):
+
+        uid = int(call.data.split("_")[1])
+
+        bot.send_message(uid,"❌ Payment Rejected")
+
+        bot.answer_callback_query(call.id,"❌ Rejected",show_alert=True)
 
 print("Bot Running...")
 bot.infinity_polling(skip_pending=True)
