@@ -32,7 +32,6 @@ db = load_db()
 users = set(db["users"])
 
 def save_user(uid):
-
     if uid not in users:
         users.add(uid)
         db["users"] = list(users)
@@ -99,13 +98,85 @@ def broadcast(message):
     text = message.text.replace("/broadcast ","")
 
     for user in users:
-
         try:
             bot.send_message(user,text)
         except:
             pass
 
     bot.reply_to(message,"✅ Broadcast Sent")
+
+# SET DEMO
+@bot.message_handler(commands=['setdemo'])
+def set_demo(message):
+
+    global demo_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        demo_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ Demo channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/setdemo https://t.me/channel")
+
+# SET HOW
+@bot.message_handler(commands=['sethow'])
+def set_how(message):
+
+    global how_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        how_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ How channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/sethow https://t.me/channel")
+
+# SET PREMIUM
+@bot.message_handler(commands=['setpremium'])
+def set_premium(message):
+
+    global premium_channel
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        premium_channel = message.text.split(" ")[1]
+        bot.reply_to(message,"✅ Premium channel updated")
+    except:
+        bot.reply_to(message,"Usage:\n/setpremium https://t.me/channel")
+
+# SET QR
+@bot.message_handler(commands=['setqr'])
+def set_qr(message):
+
+    global waiting_qr
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    waiting_qr = True
+    bot.reply_to(message,"📷 Send new QR image")
+
+# QR IMAGE UPDATE
+@bot.message_handler(content_types=['photo'], func=lambda m: waiting_qr and m.from_user.id == ADMIN_ID)
+def update_qr(message):
+
+    global waiting_qr
+
+    file_info = bot.get_file(message.photo[-1].file_id)
+    downloaded = bot.download_file(file_info.file_path)
+
+    with open("qr.jpg","wb") as f:
+        f.write(downloaded)
+
+    waiting_qr = False
+
+    bot.reply_to(message,"✅ QR updated successfully")
 
 # BUTTONS
 @bot.callback_query_handler(func=lambda call: True)
@@ -134,7 +205,6 @@ def buttons(call):
     elif call.data == "paid":
 
         waiting_screenshot[uid] = True
-
         bot.send_message(uid,"📸 Please send your payment screenshot now.")
 
     elif call.data == "back":
@@ -183,25 +253,3 @@ def receive_ss(message):
         bot.reply_to(
             message,
             "⚠️𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲\n𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
-        )
-        return
-
-    waiting_screenshot.pop(uid)
-
-    markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
-        InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
-    )
-
-    bot.send_photo(
-        ADMIN_ID,
-        message.photo[-1].file_id,
-        caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
-        reply_markup=markup
-    )
-
-    bot.reply_to(message,"⏳ Screenshot sent for verification")
-
-print("Bot Running...")
-bot.infinity_polling(skip_pending=True)
