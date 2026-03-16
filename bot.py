@@ -346,7 +346,8 @@ def handle_photo(message):
 
         bot.reply_to(
             message,
-            "⚠️ Please click 'I HAVE PAID' before sending screenshot."
+            "𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲 
+𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
         )
 
 
