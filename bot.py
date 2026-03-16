@@ -11,7 +11,9 @@ demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 how_channel = " "
 
 waiting_for_payment = {}
-# LOAD USERS FROM FILE
+waiting_qr = False
+
+# LOAD USERS
 try:
     with open("users.txt","r") as f:
         users = set(f.read().splitlines())
@@ -19,12 +21,14 @@ except:
     users = set()
 
 def save_user(user_id):
-    users.add(str(user_id))
-    with open("users.txt","a") as f:
-        f.write(str(user_id) + "\n")
-used_utr = set()
+    user_id = str(user_id)
 
-waiting_qr = False
+    if user_id not in users:
+        users.add(user_id)
+
+        with open("users.txt","a") as f:
+            f.write(user_id + "\n")
+
 
 start_text = """
 𝐕𝐢𝐝𝐞𝐨 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 🌸
@@ -47,8 +51,9 @@ start_text = """
 payment_text = """
 Make the payment of ₹99.00
 
-After payment send your 12 digit UTR number.
+After payment send the payment screenshot here.
 """
+
 
 # START
 @bot.message_handler(commands=['start'])
@@ -67,7 +72,7 @@ def start(message):
     bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
 
 
-# USERS COMMAND
+# USERS
 @bot.message_handler(commands=['users'])
 def users_count(message):
 
@@ -86,7 +91,7 @@ def broadcast(message):
 
     text = message.text.replace("/broadcast ","")
 
-    for user in list(users):
+    for user in users.copy():
         try:
             bot.send_message(int(user), text)
         except:
@@ -156,22 +161,20 @@ def set_qr(message):
     bot.reply_to(message,"📷 Send new QR image")
 
 
-@bot.message_handler(content_types=['photo'])
+@bot.message_handler(content_types=['photo'], func=lambda m: waiting_qr)
 def update_qr(message):
 
     global waiting_qr
 
-    if waiting_qr and message.from_user.id == ADMIN_ID:
+    file_info = bot.get_file(message.photo[-1].file_id)
+    downloaded = bot.download_file(file_info.file_path)
 
-        file_info = bot.get_file(message.photo[-1].file_id)
-        downloaded = bot.download_file(file_info.file_path)
+    with open("qr.jpg","wb") as new_file:
+        new_file.write(downloaded)
 
-        with open("qr.jpg","wb") as new_file:
-            new_file.write(downloaded)
+    waiting_qr = False
 
-        waiting_qr = False
-
-        bot.reply_to(message,"✅ QR updated successfully")
+    bot.reply_to(message,"✅ QR updated successfully")
 
 
 # BUTTON HANDLER
@@ -235,12 +238,6 @@ def buttons(call):
             "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
         )
 
-        bot.edit_message_text(
-            f"✅ Payment Approved\n\nUser: {uid}",
-            call.message.chat.id,
-            call.message.message_id
-        )
-
         bot.answer_callback_query(call.id,"✅ Approved Successfully")
 
 
@@ -250,38 +247,16 @@ def buttons(call):
 
         bot.send_message(uid,"❌ Payment Rejected")
 
-        bot.edit_message_text(
-            f"❌ Payment Rejected\n\nUser: {uid}",
-            call.message.chat.id,
-            call.message.message_id
-        )
-
         bot.answer_callback_query(call.id,"❌ Rejected Successfully")
 
 
-# UTR CHECK
-@bot.message_handler(func=lambda message: True)
-def payment_check(message):
+# SCREENSHOT PAYMENT
+@bot.message_handler(content_types=['photo'])
+def payment_screenshot(message):
 
     uid = message.from_user.id
-    text = message.text.strip()
-
-    if text.startswith("/"):
-        return
 
     if uid in waiting_for_payment and waiting_for_payment[uid]:
-
-        if not text.isdigit() or len(text) != 12:
-
-            bot.reply_to(message,"❌ Invalid UTR\n\nPlease send correct 12 digit UTR number.")
-            return
-
-        if text in used_utr:
-
-            bot.reply_to(message,"⚠️ This UTR already used")
-            return
-
-        used_utr.add(text)
 
         markup = InlineKeyboardMarkup()
         markup.add(
@@ -289,13 +264,14 @@ def payment_check(message):
             InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
         )
 
-        bot.send_message(
+        bot.send_photo(
             ADMIN_ID,
-            f"Payment request\n\nUser: {uid}\nUTR: {text}",
+            message.photo[-1].file_id,
+            caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
             reply_markup=markup
         )
 
-        bot.reply_to(message,"⏳ Payment sent for verification")
+        bot.reply_to(message,"⏳ Screenshot sent for verification")
 
     else:
 
