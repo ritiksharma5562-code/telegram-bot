@@ -253,3 +253,25 @@ def receive_ss(message):
         bot.reply_to(
             message,
             "⚠️𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲\n𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
+        )
+        return
+
+    waiting_screenshot.pop(uid)
+
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
+        InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
+    )
+
+    bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
+        caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
+        reply_markup=markup
+    )
+
+    bot.reply_to(message,"⏳ Screenshot sent for verification")
+
+print("Bot Running...")
+bot.infinity_polling(skip_pending=True)
