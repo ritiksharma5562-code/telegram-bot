@@ -44,27 +44,27 @@ def save_user(uid):
 
 # TEXT
 start_text = """
-Video Channel 🌸
+𝐕𝐢𝐝𝐞𝐨 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 🌸
 
-For Desi Content Lovers 😋
+𝐅𝐨𝐫 𝐃𝐞𝐬𝐢 𝐂𝐨𝐧𝐭𝐞𝐧𝐭 𝐋𝐨𝐯𝐞𝐫𝐬 😋
 
-No Sn#p, Pure Desi Content 😙
+𝐍𝐨 𝐒𝐧#𝐩, 𝐏𝐮𝐫𝐞 𝐃𝐞𝐬𝐢 𝐂𝐨𝐧𝐭𝐞𝐧𝐭 😙
 
-rare Desi le#ks ever.... 🎀
+𝐫𝐚𝐫𝐞 𝐃𝐞𝐬𝐢 𝐥𝐞#𝐤𝐬 𝐞𝐯𝐞𝐫.... 🎀
 
-Just pay and get entry...
+𝐉𝐮𝐬𝐭 𝐩𝐚𝐲 𝐚𝐧𝐝 𝐠𝐞𝐭 𝐞𝐧𝐭𝐫𝐲...
 
-No - Ads Sh#t 🔥
+𝐍𝐨 - 𝐀𝐝𝐬 𝐒𝐡#𝐭 🔥
 
-Price :- ₹99.00/-
+𝐏𝐫𝐢𝐜𝐞 :- ₹𝟗𝟗.𝟎𝟎/-
 
-Validity :- lifetime
+𝐕𝐚𝐥𝐢𝐝𝐢𝐭𝐲 :- 𝐥𝐢𝐟𝐞𝐭𝐢𝐦𝐞
 """
 
 
 payment_text = """
-1️⃣ Scan QR & Pay ₹99
-2️⃣ Click on 'I HAVE PAID' button below 👇
+1️⃣ 𝐒𝐜𝐚𝐧 𝐐𝐑 & 𝐏𝐚𝐲 ₹𝟗𝟗
+2️⃣ 𝐂𝐥𝐢𝐜𝐤 𝐨𝐧 '𝐈 𝐇𝐀𝐕𝐄 𝐏𝐀𝐈𝐃' 𝐛𝐮𝐭𝐭𝐨𝐧 𝐛𝐞𝐥𝐨𝐰 👇
 """
 
 
