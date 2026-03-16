@@ -8,7 +8,7 @@ bot = telebot.TeleBot(TOKEN)
 
 premium_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
-how_channel = " "
+how_channel = "https://t.me/AKASH_OP_001?text=hello+Sir+how+to+get+premium"
 
 waiting_for_payment = {}
 waiting_qr = False
