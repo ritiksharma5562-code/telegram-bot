@@ -1,4 +1,3 @@
 pyTelegramBotAPI
-pytesseract
 Pillow
 requests
