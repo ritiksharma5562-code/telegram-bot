@@ -1,7 +1,5 @@
 import telebot
 import json
-import pytesseract
-from PIL import Image
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
 TOKEN = "8687497631:AAE4niCmKtkhPsAy44zn04-bZOjJYg94Kd4"
@@ -39,24 +37,7 @@ def save_user(uid):
         db["users"] = list(users)
         save_db(db)
 
-# AI OCR PAYMENT DETECTION
-def detect_payment(image_path):
-
-    img = Image.open(image_path)
-    text = pytesseract.image_to_string(img).lower()
-
-    keywords = [
-        "upi","transaction","paid","success",
-        "paytm","phonepe","google","gpay","₹"
-    ]
-
-    for word in keywords:
-        if word in text:
-            return True
-
-    return False
-
-
+# TEXT
 start_text = """
 Video Channel 🌸
 
@@ -199,18 +180,6 @@ def handle_photo(message):
             message,
             "⚠️𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲\n𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
         )
-        return
-
-    file_info = bot.get_file(message.photo[-1].file_id)
-    downloaded = bot.download_file(file_info.file_path)
-
-    with open("payment.jpg","wb") as f:
-        f.write(downloaded)
-
-    # AI CHECK
-    if not detect_payment("payment.jpg"):
-
-        bot.reply_to(message,"❌ Invalid payment screenshot")
         return
 
     waiting_screenshot.pop(uid)
