@@ -1,5 +1,5 @@
 import telebot
-import hashlib
+import json
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
 TOKEN = "8687497631:AAE4niCmKtkhPsAy44zn04-bZOjJYg94Kd4"
@@ -9,30 +9,34 @@ bot = telebot.TeleBot(TOKEN)
 
 premium_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 demo_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
-how_channel = " "
+how_channel = "https://t.me/+Pjf9kjog2Y81Njg1"
 
-waiting_for_payment = {}
-waiting_qr = False
-used_images = set()
+waiting_screenshot = {}
 
-# USERS DATABASE
-try:
-    with open("users.txt","r") as f:
-        users = set(f.read().splitlines())
-except:
-    users = set()
+# DATABASE
+DB_FILE = "database.json"
 
-def save_user(user_id):
-    user_id = str(user_id)
+def load_db():
+    try:
+        with open(DB_FILE,"r") as f:
+            return json.load(f)
+    except:
+        return {"users":[]}
 
-    if user_id not in users:
+def save_db(data):
+    with open(DB_FILE,"w") as f:
+        json.dump(data,f)
 
-        users.add(user_id)
+db = load_db()
+users = set(db["users"])
 
-        with open("users.txt","a") as f:
-            f.write(user_id+"\n")
+def save_user(uid):
+    if uid not in users:
+        users.add(uid)
+        db["users"] = list(users)
+        save_db(db)
 
-
+# TEXT
 start_text = """
 𝐕𝐢𝐝𝐞𝐨 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 🌸
 
@@ -46,50 +50,32 @@ start_text = """
 
 𝐍𝐨 - 𝐀𝐝𝐬 𝐒𝐡#𝐭 🔥
 
-𝐏𝐫𝐢𝐜𝐞 :- ₹𝟗𝟗.𝟎𝟎/-
+𝐏𝐫𝐢𝐜𝐞 :- ₹99.00/-
 
-𝐕𝐚𝐥𝐢𝐝𝐢𝐭𝐲 :- 𝐥𝐢𝐟𝐞𝐭𝐢𝐦𝐞
+𝐕𝐚𝐥𝐢𝐝𝐢𝐭𝐲 :- lifetime
 """
 
 payment_text = """
 1️⃣ Scan QR & Pay ₹99
-
 2️⃣ Click on 'I HAVE PAID' button below 👇
 """
-
 
 # START
 @bot.message_handler(commands=['start'])
 def start(message):
 
-    user_id = message.from_user.id
-    save_user(user_id)
+    save_user(message.from_user.id)
 
     markup = InlineKeyboardMarkup()
-
-    markup.add(
-        InlineKeyboardButton("💎 Get Premium",callback_data="buy")
-    )
-
-    markup.add(
-        InlineKeyboardButton("🎬 Premium Demo",url=demo_channel)
-    )
-
-    markup.add(
-        InlineKeyboardButton("📖 How To Get Premium",url=how_channel)
-    )
+    markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
+    markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
+    markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
 
     photo = open("start.jpg","rb")
 
-    bot.send_photo(
-        message.chat.id,
-        photo,
-        caption=start_text,
-        reply_markup=markup
-    )
+    bot.send_photo(message.chat.id,photo,caption=start_text,reply_markup=markup)
 
-
-# USERS
+# USERS COMMAND
 @bot.message_handler(commands=['users'])
 def users_count(message):
 
@@ -97,7 +83,6 @@ def users_count(message):
         return
 
     bot.reply_to(message,f"👥 Total Users: {len(users)}")
-
 
 # BROADCAST
 @bot.message_handler(commands=['broadcast'])
@@ -108,86 +93,25 @@ def broadcast(message):
 
     text = message.text.replace("/broadcast ","")
 
-    for user in users.copy():
-
+    for user in users:
         try:
-            bot.send_message(int(user),text)
+            bot.send_message(user,text)
         except:
             pass
 
     bot.reply_to(message,"✅ Broadcast Sent")
 
-
-# SET CHANNEL COMMANDS
-@bot.message_handler(commands=['setdemo'])
-def set_demo(message):
-
-    global demo_channel
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    demo_channel = message.text.split(" ")[1]
-
-    bot.reply_to(message,"✅ Demo channel updated")
-
-
-@bot.message_handler(commands=['sethow'])
-def set_how(message):
-
-    global how_channel
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    how_channel = message.text.split(" ")[1]
-
-    bot.reply_to(message,"✅ How channel updated")
-
-
-@bot.message_handler(commands=['setpremium'])
-def set_premium(message):
-
-    global premium_channel
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    premium_channel = message.text.split(" ")[1]
-
-    bot.reply_to(message,"✅ Premium channel updated")
-
-
-# SET QR
-@bot.message_handler(commands=['setqr'])
-def set_qr(message):
-
-    global waiting_qr
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    waiting_qr = True
-    bot.reply_to(message,"📷 Send new QR image")
-
-
-# BUTTON HANDLER
+# BUTTONS
 @bot.callback_query_handler(func=lambda call: True)
 def buttons(call):
 
-    user_id = call.from_user.id
+    uid = call.from_user.id
 
     if call.data == "buy":
 
         markup = InlineKeyboardMarkup()
-
-        markup.add(
-            InlineKeyboardButton("✅ I HAVE PAID",callback_data="paid")
-        )
-
-        markup.add(
-            InlineKeyboardButton("❌ Cancel",callback_data="back")
-        )
+        markup.add(InlineKeyboardButton("✅ I HAVE PAID",callback_data="paid"))
+        markup.add(InlineKeyboardButton("❌ Cancel",callback_data="back"))
 
         media = InputMediaPhoto(
             open("qr.jpg","rb"),
@@ -201,36 +125,21 @@ def buttons(call):
             reply_markup=markup
         )
 
-        bot.answer_callback_query(call.id)
-
-
     elif call.data == "paid":
 
-        waiting_for_payment[user_id] = True
+        waiting_screenshot[uid] = True
 
         bot.send_message(
-            call.message.chat.id,
+            uid,
             "📸 Please send your payment screenshot now."
         )
-
-        bot.answer_callback_query(call.id)
-
 
     elif call.data == "back":
 
         markup = InlineKeyboardMarkup()
-
-        markup.add(
-            InlineKeyboardButton("💎 Get Premium",callback_data="buy")
-        )
-
-        markup.add(
-            InlineKeyboardButton("🎬 Premium Demo",url=demo_channel)
-        )
-
-        markup.add(
-            InlineKeyboardButton("📖 How To Get Premium",url=how_channel)
-        )
+        markup.add(InlineKeyboardButton("💎 Get Premium",callback_data="buy"))
+        markup.add(InlineKeyboardButton("🎬 Premium Demo",url=demo_channel))
+        markup.add(InlineKeyboardButton("📖 How To Get Premium",url=how_channel))
 
         media = InputMediaPhoto(
             open("start.jpg","rb"),
@@ -244,111 +153,67 @@ def buttons(call):
             reply_markup=markup
         )
 
-        bot.answer_callback_query(call.id)
-
-
     elif call.data.startswith("approve_"):
 
         uid = int(call.data.split("_")[1])
-
-        waiting_for_payment[uid] = False
 
         bot.send_message(
             uid,
             "✅ Payment Verified!\n\nJoin your private channel:\n"+premium_channel
         )
 
-        bot.answer_callback_query(call.id,"✅ Approved")
+        bot.edit_message_caption(
+            caption=f"✅ Payment Approved\n\nUser: {uid}",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
 
+        bot.answer_callback_query(call.id,"✅ Approved",show_alert=True)
 
     elif call.data.startswith("reject_"):
 
         uid = int(call.data.split("_")[1])
 
-        waiting_for_payment[uid] = False
-
         bot.send_message(uid,"❌ Payment Rejected")
 
-        bot.answer_callback_query(call.id,"❌ Rejected")
+        bot.edit_message_caption(
+            caption=f"❌ Payment Rejected\n\nUser: {uid}",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
 
+        bot.answer_callback_query(call.id,"❌ Rejected",show_alert=True)
 
-# PHOTO HANDLER
+# SCREENSHOT RECEIVE
 @bot.message_handler(content_types=['photo'])
-def handle_photo(message):
+def receive_ss(message):
 
-    global waiting_qr
-
-    # QR UPDATE
-    if waiting_qr and message.from_user.id == ADMIN_ID:
-
-        file_info = bot.get_file(message.photo[-1].file_id)
-
-        downloaded = bot.download_file(file_info.file_path)
-
-        with open("qr.jpg","wb") as new_file:
-            new_file.write(downloaded)
-
-        waiting_qr = False
-
-        bot.reply_to(message,"✅ QR updated successfully")
-
-        return
-
-
-    # PAYMENT SCREENSHOT
     uid = message.from_user.id
 
-    if uid in waiting_for_payment and waiting_for_payment[uid]:
-
-        file_info = bot.get_file(message.photo[-1].file_id)
-        downloaded = bot.download_file(file_info.file_path)
-
-        image_hash = hashlib.md5(downloaded).hexdigest()
-        image_size = len(downloaded)
-
-        if image_size < 15000:
-
-            bot.reply_to(
-                message,
-                "❌ Invalid payment screenshot\n\nSend correct payment screenshot."
-            )
-
-            return
-
-        if image_hash in used_images:
-
-            bot.reply_to(
-                message,
-                "❌ Duplicate screenshot detected\nSend real payment screenshot."
-            )
-
-            return
-
-        used_images.add(image_hash)
-
-        markup = InlineKeyboardMarkup()
-
-        markup.add(
-            InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
-            InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
-        )
-
-        bot.send_photo(
-            ADMIN_ID,
-            message.photo[-1].file_id,
-            caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
-            reply_markup=markup
-        )
-
-        bot.reply_to(message,"⏳ Screenshot sent for verification")
-
-    else:
+    if uid not in waiting_screenshot:
 
         bot.reply_to(
-    message,
-    "⚠️𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲\n𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
-)
+            message,
+            "⚠️𝐓𝐇𝐈𝐒 𝐈𝐒 𝐍𝐎𝐓 𝐂𝐎𝐑𝐑𝐄𝐂𝐓 𝐒𝐄𝐋𝐄𝐂𝐓𝐈𝐎𝐍 🥲\n𝐏𝐋𝐄𝐀𝐒𝐄, 𝐒𝐄𝐋𝐄𝐂𝐓 𝐅𝐑𝐎𝐌 𝐎𝐏𝐓𝐈𝐎𝐍𝐒✅"
+        )
+        return
 
+    waiting_screenshot.pop(uid)
+
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("✅ Approve",callback_data="approve_"+str(uid)),
+        InlineKeyboardButton("❌ Reject",callback_data="reject_"+str(uid))
+    )
+
+    bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
+        caption=f"Payment Screenshot\n\nUser: @{message.from_user.username}\nID: {uid}",
+        reply_markup=markup
+    )
+
+    bot.reply_to(message,"⏳ Screenshot sent for verification")
 
 print("Bot Running...")
 bot.infinity_polling(skip_pending=True)
