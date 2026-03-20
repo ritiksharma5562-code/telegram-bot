@@ -8,8 +8,8 @@ ADMIN_ID = 5888788582
 bot = telebot.TeleBot(TOKEN)
 
 premium_channel = "https://t.me/+vZk5pN-jUWVlYzRl"
-demo_channel = "https://t.me/demodekhloguys001"
-how_channel = "https://t.me/demodekhloguys001"
+demo_channel = "https://t.me/+C6f4L2w7KyM0MTY1"
+how_channel = "https://t.me/+C6f4L2w7KyM0MTY1"
 
 waiting_screenshot = {}
 waiting_qr = False
